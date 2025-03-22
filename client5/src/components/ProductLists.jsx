@@ -9,6 +9,7 @@ const ProductList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { categoryId } = useParams(); // Get category ID from URL
+  const navigate = useNavigate()
 
   useEffect(() => {
     // Fetch categories
@@ -51,7 +52,7 @@ const ProductList = () => {
   const handleCategoryChange = (event) => {
     const newCategoryId = event.target.value;
     setSelectedCategory(newCategoryId);
-    window.location.href = `/category/${newCategoryId}`; // Redirect to new category
+   navigate( `/category/${newCategoryId}`); // Redirect to new category
   };
 
   // Inline styling
