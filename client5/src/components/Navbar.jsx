@@ -166,7 +166,7 @@ const Navbar = () => {
       <div style={inStyle.logoContainer}>
         <Link to="/">
           <img
-            src=""
+            src="https://res.cloudinary.com/dud5wwx9h/image/upload/v1742676996/DALL_E_2025-03-17_15.40.12_-_A_modern_professional_logo_for_Vendix_a_multi-vendor_marketplace._The_design_should_include_a_sleek_shopping_cart_or_storefront_icon_with_a_vibra_a28imw.webp"
             alt="Marketplace Logo"
             style={inStyle.logo}
           />
