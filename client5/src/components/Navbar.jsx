@@ -166,7 +166,7 @@ const Navbar = () => {
       <div style={inStyle.logoContainer}>
         <Link to="/">
           <img
-            src="https://files.oaiusercontent.com/file-NKZtzSWh9inDYHFqD4rwsR?se=2025-03-18T07%3A35%3A20Z&sp=r&sv=2024-08-04&sr=b&rscc=max-age%3D604800%2C%20immutable%2C%20private&rscd=attachment%3B%20filename%3Dee38d090-ddd6-4852-84c4-b9b2a275d5c7.webp&sig=PyCROmJMK0Bs7DPwxKfvNKA3EdUBmvnqfol9A7Bo49M%3D"
+            src=""
             alt="Marketplace Logo"
             style={inStyle.logo}
           />
