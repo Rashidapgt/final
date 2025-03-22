@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom"; // Import useNavigate
 import axios from "axios";
 
 const ProductList = () => {
@@ -9,9 +9,8 @@ const ProductList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { categoryId } = useParams(); // Get category ID from URL
+  const navigate = useNavigate(); // Initialize navigate hook
   
-  
-
   useEffect(() => {
     // Fetch categories
     const fetchCategories = async () => {
@@ -53,7 +52,7 @@ const ProductList = () => {
   const handleCategoryChange = (event) => {
     const newCategoryId = event.target.value;
     setSelectedCategory(newCategoryId);
-    window.location.href( `/category/${newCategoryId}`); // Redirect to new category
+    navigate(`/category/${newCategoryId}`); // Use navigate to redirect
   };
 
   // Inline styling
@@ -157,6 +156,7 @@ const ProductList = () => {
 };
 
 export default ProductList;
+
 
 
 
