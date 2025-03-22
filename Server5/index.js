@@ -22,7 +22,7 @@ const {cloudinary}=require('./src/config/cloudinary')
 app.use(express.json())
 app.use(cookieParser());
 
-const allowedOrigins = ["http://localhost:5173" , "https://marketplace-frontend-ten-lemon.vercel.app"];
+const allowedOrigins = ["http://localhost:5173" , "https://marketplace-frontend-ten-lemon.vercel.app", "https://marketplace-frontend-git-main-hamdis-projects-f6154b4f.vercel.app",];
 app.use(cors({
     origin:(origin,callback)=>{
         if(!origin || allowedOrigins.includes(origin)){
