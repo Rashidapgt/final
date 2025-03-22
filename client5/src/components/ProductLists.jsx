@@ -10,6 +10,7 @@ const ProductList = () => {
   const [error, setError] = useState(null);
   const { categoryId } = useParams(); // Get category ID from URL
   
+  
 
   useEffect(() => {
     // Fetch categories
