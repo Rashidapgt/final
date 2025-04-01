@@ -183,42 +183,8 @@ const Navbar = () => {
         <li><Link to="/order-history">My Orders</Link></li>
         <li><Link to="/productlist">Product List</Link></li>
         <li><Link to="/cart">Cart</Link></li>
-        <li><Link to="/profile">Profile</Link></li>
       </ul>
 
-      {/* Search Bar */}
-      <form style={inStyle.searchBar} onSubmit={handleSearch}>
-        {/* Add a label for accessibility (optional but recommended) */}
-        <label htmlFor="search-input" style={{ display: "none" }}>
-          Search products
-        </label>
-        <input
-          type="text"
-          placeholder="Search products..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={inStyle.searchInput}
-          id="search-input" // Add an id
-          name="search" // Add a name
-          autoComplete="off" // Disable autocomplete if not needed
-        />
-        <button type="submit" style={inStyle.searchButton}>Search</button>
-
-        {/* Display filtered products as a dropdown */}
-        {search && filteredProducts.length > 0 && (
-          <div style={inStyle.searchResults}>
-            {filteredProducts.map((product) => (
-              <Link
-                key={product._id}
-                to={`/productdetails/${product._id}`}
-                style={inStyle.searchResultItem}
-              >
-                {product.name}
-              </Link>
-            ))}
-          </div>
-        )}
-      </form>
 
       {/* Cart Icon with Item Count */}
       <div style={inStyle.cartContainer}>

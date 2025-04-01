@@ -2,13 +2,14 @@ import React from "react";
 import { NavLink } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { logoutUser } from "../store/AuthSlice";
-import { FaHome, FaProductHunt, FaListAlt, FaUsers, FaSignOutAlt } from "react-icons/fa";
+import { FaHome, FaProductHunt, FaListAlt, FaUsers } from "react-icons/fa";
 
 const Sidebar = () => {
   const dispatch = useDispatch();
 
   const handleLogout = () => {
     dispatch(logoutUser());
+    localStorage.removeItem("token"); // Clear token on logout
   };
 
   // Define your styles object
@@ -78,7 +79,7 @@ const Sidebar = () => {
       <ul style={inStyle.list}>
         <li style={inStyle.listItem}>
           <NavLink
-            to="/dashboard"
+            to="/"
             style={({ isActive }) => ({
               ...inStyle.link,
               ...(isActive ? inStyle.activeLink : {}),
@@ -111,40 +112,42 @@ const Sidebar = () => {
         </li>
         <li style={inStyle.listItem}>
           <NavLink
-            to="/dashboard/approve-vendors"
+            to="/dashboard/vendor-dashboard"
             style={({ isActive }) => ({
               ...inStyle.link,
               ...(isActive ? inStyle.activeLink : {}),
             })}
           >
-            <FaUsers style={inStyle.icon} /> Approve Vendors
+            <FaUsers style={inStyle.icon} /> Vendor Dashboard
           </NavLink>
         </li>
         <li style={inStyle.listItem}>
           <NavLink
-            to="/dashboard/manage-users"
+            to="/dashboard/buyer-dashboard"
             style={({ isActive }) => ({
               ...inStyle.link,
               ...(isActive ? inStyle.activeLink : {}),
             })}
           >
-            <FaUsers style={inStyle.icon} /> Manage Users
+            <FaUsers style={inStyle.icon} /> Buyer Dashboard
           </NavLink>
         </li>
       </ul>
-      <button
+
+      {/* Logout Button */}
+      <button 
+        style={inStyle.logoutButton} 
         onClick={handleLogout}
-        style={inStyle.logoutButton}
-        onMouseEnter={(e) => (e.target.style.backgroundColor = inStyle.logoutButtonHover.backgroundColor)}
-        onMouseLeave={(e) => (e.target.style.backgroundColor = "#e74c3c")}
       >
-        <FaSignOutAlt style={inStyle.icon} /> Logout
+        Logout
       </button>
     </div>
   );
 };
 
 export default Sidebar;
+
+
 
 
 

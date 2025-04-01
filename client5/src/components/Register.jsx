@@ -138,7 +138,7 @@ const Register = () => {
             <option value="">Select Role</option>
             <option value="buyer">Buyer</option>
             <option value="vendor">Vendor</option>
-            <option value="admin">Admin</option>
+           
           </select>
           {role === "vendor" && (
             <input

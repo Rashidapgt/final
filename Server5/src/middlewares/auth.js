@@ -1,17 +1,17 @@
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const User = require('../models/usermodel');
-
 exports.auth = async (req, res, next) => {
     try {
-        const token = req.cookies.token;
+        let token = req.cookies.token || req.headers.authorization?.split(" ")[1];
+
         if (!token) {
             return res.status(401).json({ message: "Authentication error: Token missing" });
         }
 
         // Verify JWT token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = await User.findById(decoded.id);
+        req.user = await User.findById(decoded.id).select("-password");
 
         if (!req.user) {
             return res.status(404).json({ message: "User not found" });
@@ -19,10 +19,8 @@ exports.auth = async (req, res, next) => {
 
         next();
     } catch (error) {
-        if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-            return res.status(401).json({ message: "Authentication error: Invalid or expired token" });
-        }
-        return res.status(500).json({ message: "Server error", error: error.message });
+        console.error("Auth Middleware Error:", error.message);
+        return res.status(401).json({ message: "Invalid or expired token" });
     }
 };
 

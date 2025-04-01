@@ -1,93 +1,286 @@
-import React, { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { updateProfile } from "../store/AuthSlice"; // Ensure this action is defined
+import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { getVendorProfiles, updateProfile } from '../store/AuthSlice';
+import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
-  const { user } = useSelector((state) => state.auth); // Get user data from Redux store
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const [editMode, setEditMode] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+  });
 
-  // State for form fields
-  const [name, setName] = useState(user?.name || "");
-  const [email, setEmail] = useState(user?.email || "");
+  // Get profile data from Redux store
+  const { user, loading, error } = useSelector((state) => state.auth);
 
-  // Handle form submission
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const updatedUser = { name, email };
-    dispatch(updateProfile(updatedUser)); // Dispatch the action to update profile
-  };
-
-  // Inline styles
+  // Complete style object
   const styles = {
-    profileContainer: {
-      maxWidth: "500px",
-      margin: "0 auto",
-      padding: "20px",
-      border: "1px solid #ccc",
-      borderRadius: "8px",
-      backgroundColor: "#f9f9f9",
+    container: {
+      maxWidth: '1200px',
+      margin: '0 auto',
+      padding: '20px',
+      fontFamily: 'Arial, sans-serif',
+      backgroundColor: '#f8f9fa',
+      minHeight: '100vh'
     },
-    profileForm: {
-      display: "flex",
-      flexDirection: "column",
-      gap: "15px",
+    header: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '30px',
+      padding: '20px',
+      backgroundColor: 'white',
+      borderRadius: '10px',
+      boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
     },
-    formGroup: {
-      display: "flex",
-      flexDirection: "column",
-      gap: "5px",
+    title: {
+      fontSize: '28px',
+      margin: '0',
+      color: '#333'
+    },
+    roleBadge: {
+      padding: '8px 20px',
+      borderRadius: '20px',
+      fontSize: '14px',
+      fontWeight: 'bold',
+      textTransform: 'uppercase'
+    },
+    vendorBadge: {
+      backgroundColor: '#d4edda',
+      color: '#155724',
+      border: '1px solid #c3e6cb'
+    },
+    customerBadge: {
+      backgroundColor: '#cce5ff',
+      color: '#004085',
+      border: '1px solid #b8daff'
+    },
+    content: {
+      backgroundColor: 'white',
+      padding: '30px',
+      borderRadius: '10px',
+      boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+    },
+    profileSection: {
+      display: 'flex',
+      gap: '30px',
+      flexWrap: 'wrap'
+    },
+    avatarContainer: {
+      flex: '0 0 200px',
+      textAlign: 'center'
+    },
+    avatar: {
+      width: '150px',
+      height: '150px',
+      borderRadius: '50%',
+      objectFit: 'cover',
+      border: '3px solid #eee',
+      marginBottom: '15px'
+    },
+    infoContainer: {
+      flex: '1',
+      minWidth: '300px'
+    },
+    infoItem: {
+      marginBottom: '15px',
+      display: 'flex',
+      alignItems: 'center',
+      flexWrap: 'wrap'
+    },
+    infoLabel: {
+      width: '120px',
+      fontWeight: 'bold',
+      color: '#555',
+      marginRight: '10px'
+    },
+    infoValue: {
+      flex: '1',
+      padding: '8px 0'
     },
     inputField: {
-      padding: "8px",
-      borderRadius: "4px",
-      border: "1px solid #ccc",
-      fontSize: "16px",
+      width: '100%',
+      padding: '10px',
+      border: '1px solid #ddd',
+      borderRadius: '5px',
+      fontSize: '16px',
+      margin: '5px 0'
     },
-    saveButton: {
-      padding: "10px",
-      borderRadius: "4px",
-      border: "none",
-      backgroundColor: "#007bff",
-      color: "#fff",
-      fontSize: "16px",
-      cursor: "pointer",
+    buttonGroup: {
+      display: 'flex',
+      gap: '10px',
+      marginTop: '20px'
     },
-    saveButtonHover: {
-      backgroundColor: "#0056b3",
+    button: {
+      padding: '10px 20px',
+      borderRadius: '5px',
+      border: 'none',
+      cursor: 'pointer',
+      fontSize: '16px',
+      fontWeight: '500',
+      transition: 'all 0.3s ease'
     },
+    primaryButton: {
+      backgroundColor: '#3498db',
+      color: 'white',
+      '&:hover': {
+        backgroundColor: '#2980b9'
+      }
+    },
+    secondaryButton: {
+      backgroundColor: '#95a5a6',
+      color: 'white',
+      '&:hover': {
+        backgroundColor: '#7f8c8d'
+      }
+    },
+    loading: {
+      textAlign: 'center',
+      padding: '50px',
+      fontSize: '18px',
+      color: '#666'
+    },
+    error: {
+      color: '#e74c3c',
+      backgroundColor: '#fadbd8',
+      padding: '15px',
+      borderRadius: '5px',
+      marginBottom: '20px',
+      textAlign: 'center'
+    },
+    errorContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '200px'
+    }
   };
 
-  return (
-    <div style={styles.profileContainer}>
-      <h2>Profile Information</h2>
-      <form onSubmit={handleSubmit} style={styles.profileForm}>
-        <div style={styles.formGroup}>
-          <label>Name:</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            style={styles.inputField}
-          />
+
+  // Fetch profile data
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        await dispatch(getVendorProfiles()).unwrap();
+      } catch (err) {
+        console.error('Failed to load profile:', err);
+        if (err?.response?.status === 401) {
+          navigate('/login');
+        }
+      }
+    };
+    
+    fetchProfile();
+  }, [dispatch, navigate]);
+
+  // Update form data when user data loads
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        address: user.address || ''
+      });
+    }
+  }, [user]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await dispatch(updateProfile(formData)).unwrap();
+      setEditMode(false);
+    } catch (err) {
+      console.error('Update failed:', err);
+      if (err?.response?.status === 401) {
+        navigate('/login');
+      }
+    }
+  };
+
+  if (loading) {
+    return <div style={styles.loading}>Loading profile...</div>;
+  }
+
+  if (error) {
+    return (
+      <div style={styles.errorContainer}>
+        <div style={styles.error}>
+          {error.includes('401') ? 'Session expired. Please login again.' : error}
         </div>
-        <div style={styles.formGroup}>
-          <label>Email:</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={styles.inputField}
-          />
-        </div>
-        <button
-          type="submit"
-          style={styles.saveButton}
-          onMouseOver={(e) => (e.target.style.backgroundColor = styles.saveButtonHover.backgroundColor)}
-          onMouseOut={(e) => (e.target.style.backgroundColor = styles.saveButton.backgroundColor)}
+        <button 
+          style={{ ...styles.button, ...styles.primaryButton }}
+          onClick={() => navigate('/login')}
         >
-          Save Changes
+          Go to Login
         </button>
-      </form>
+      </div>
+    );
+  }
+
+  return (
+    <div style={styles.container}>
+      <div style={styles.header}>
+        <h1 style={styles.title}>My Profile</h1>
+        {user?.role && (
+          <div style={{
+            ...styles.roleBadge,
+            ...(user.role === 'vendor' ? styles.vendorBadge : styles.customerBadge)
+          }}>
+            {user.role.toUpperCase()}
+          </div>
+        )}
+      </div>
+
+      <div style={styles.content}>
+        <div style={styles.profileSection}>
+          <div style={styles.avatarContainer}>
+            <div style={styles.avatar}>
+              {user?.name?.[0]?.toUpperCase() || 'U'}
+            </div>
+            <h3>{user?.name || 'User'}</h3>
+            <p>{user?.email || ''}</p>
+          </div>
+
+          <div style={styles.infoContainer}>
+            {!editMode ? (
+              <>
+                <div style={styles.infoItem}>
+                  <div style={styles.infoLabel}>Name:</div>
+                  <div style={styles.infoValue}>{user?.name || 'Not provided'}</div>
+                </div>
+                {/* ... other profile fields ... */}
+                <button
+                  style={{ ...styles.button, ...styles.primaryButton }}
+                  onClick={() => setEditMode(true)}
+                >
+                  Edit Profile
+                </button>
+              </>
+            ) : (
+              <form onSubmit={handleSubmit}>
+                {/* ... edit form fields ... */}
+                <button
+                  type="submit"
+                  style={{ ...styles.button, ...styles.primaryButton }}
+                >
+                  Save Changes
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

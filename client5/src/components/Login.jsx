@@ -4,98 +4,128 @@ import { loginUser } from "../store/AuthSlice";
 import { useNavigate, Link } from "react-router-dom";
 
 const Login = () => {
-  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { isLoading, error, user } = useSelector((state) => state.auth);
+  const { isLoading, error, user, isAuthenticated } = useSelector((state) => state.auth);
 
-  // If the user is already logged in, redirect to the dashboard
+  console.log("Current auth state:", { isLoading, error, user, isAuthenticated });
+
+  // Handle redirection after successful login
   useEffect(() => {
-    if (user) {
-      console.log("User is already logged in. Redirecting...");
-      navigate("/dashboard");
+    if (isAuthenticated && user?.token) {
+      const role = user?.role?.toLowerCase();
+      const dashboardRoute = {
+        admin: "/admin-dashboard",
+        vendor: "/vendor-dashboard",
+        buyer: "/buyer-dashboard",
+      };
+
+      const route = dashboardRoute[role] || "/";
+      navigate(route);
     }
-  }, [user, navigate]);
+  }, [isAuthenticated, user, navigate]); // Dependency on isAuthenticated and user
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    const result = await dispatch(loginUser({ name, password }));
+    console.log("Login attempt with:", { email, password });
 
-    // Log result to see the response from login
-    console.log("Login result:", result);
+    try {
+      const result = await dispatch(loginUser({ email, password }));
+      console.log("Login result:", result);
 
-    // Check if the login action was fulfilled and navigate
-    if (result.type === "admin/login/fulfilled") {
-      console.log("Login successful. Redirecting...");
-      navigate("/dashboard");
-    } else {
-      console.log("Login failed:", result.payload);
+      if (loginUser.fulfilled.match(result)) {
+        console.log("Login successful - payload:", result.payload);
+      } else if (loginUser.rejected.match(result)) {
+        console.log("Login failed:", result.error);
+      }
+    } catch (err) {
+      console.error("Login error:", err);
     }
   };
 
+  // Styles (simplified for clarity)
   const styles = {
-    authContainer: {
+    container: {
       display: "flex",
       justifyContent: "center",
       alignItems: "center",
-      height: "100vh",
-      backgroundColor: "#f8f9fa",
+      minHeight: "100vh",
+      backgroundColor: "#f5f7fa",
     },
-    authCard: {
+    card: {
       background: "white",
-      padding: "20px",
-      borderRadius: "8px",
-      boxShadow: "0 0 10px rgba(0, 0, 0, 0.1)",
-      width: "300px",
-      textAlign: "center",
-    },
-    authInput: {
+      padding: "2rem",
+      borderRadius: "0.5rem",
+      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
       width: "100%",
-      padding: "10px",
-      margin: "10px 0",
-      border: "1px solid #ddd",
-      borderRadius: "5px",
+      maxWidth: "400px",
     },
-    authButton: {
+    input: {
       width: "100%",
-      padding: "10px",
-      background: "#007bff",
+      padding: "0.75rem",
+      margin: "0.5rem 0",
+      border: "1px solid #e2e8f0",
+      borderRadius: "0.375rem",
+    },
+    button: {
+      width: "100%",
+      padding: "0.75rem",
+      backgroundColor: "#4299e1",
       color: "white",
       border: "none",
+      borderRadius: "0.375rem",
+      marginTop: "1rem",
       cursor: "pointer",
     },
-    authError: {
-      color: "red",
-    },
+    error: {
+      color: "#e53e3e",
+      margin: "0.5rem 0",
+    }
   };
 
   return (
-    <div className={styles["auth-container"]}>
-      <div className={styles["auth-card"]}>
-        <h2>Login</h2>
-        {error && <p className={styles["auth-error"]}>{error}</p>}
+    <div style={styles.container}>
+      <div style={styles.card}>
+        <h2>Welcome Back</h2>
+        {error && (
+          <p style={styles.error}>
+            {error.message || "Login failed. Please try again."}
+          </p>
+        )}
         <form onSubmit={handleLogin}>
-          <input
-            type="text"
-            placeholder="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className={styles["auth-input"]}
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={styles["auth-input"]}
-          />
-          <button type="submit" className={styles["auth-button"]} disabled={isLoading}>
+          <div>
+            <label>Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={styles.input}
+              required
+            />
+          </div>
+          <div>
+            <label>Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={styles.input}
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            style={styles.button}
+            disabled={isLoading}
+          >
             {isLoading ? "Logging in..." : "Login"}
           </button>
         </form>
-        <p className={styles["auth-switch"]}>
-          Don't have an account? <Link to="/register">Register</Link>
+        <p>
+          Don't have an account?{" "}
+          <Link to="/register">Create account</Link>
         </p>
       </div>
     </div>
@@ -103,6 +133,9 @@ const Login = () => {
 };
 
 export default Login;
+
+
+
 
 
 

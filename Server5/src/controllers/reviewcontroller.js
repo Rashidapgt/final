@@ -23,14 +23,22 @@ exports.createReview = async (req, res) => {
 };
 
 // Get all reviews
+// In your getAllReviews controller
 exports.getAllReviews = async (req, res) => {
     try {
-        const reviews = await Review.find().populate('buyer', 'name email').populate('product', 'name');
-        res.status(200).json(reviews);
+      const { productId } = req.query;
+      let query = {};
+      
+      if (productId) {
+        query.product = productId;
+      }
+  
+      const reviews = await Review.find(query).populate('buyer', 'name');
+      res.json(reviews);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error.message });
     }
-};
+  };
 
 // Get review by ID
 exports.getReviewById = async (req, res) => {

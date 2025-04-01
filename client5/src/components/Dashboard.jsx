@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
-import { logoutUser } from "../store/AuthSlice"; // Import logoutUser action
+import { logoutUser } from "../store/AuthSlice";
 import { Link } from "react-router-dom";
+import NotificationSender from "./NotificationSender";
 
 const styles = {
   dashboardContainer: {
@@ -54,27 +55,55 @@ const styles = {
   logoutButtonHover: {
     background: "#a71d2a",
   },
+  loading: {
+    textAlign: "center",
+    fontSize: "18px",
+  },
+  error: {
+    color: "red",
+    textAlign: "center",
+  },
 };
 
 const Dashboard = () => {
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
-  const navigate = useNavigate(); // Initialize useNavigate for redirection
+  const navigate = useNavigate();
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const handleLogout = () => {
-    dispatch(logoutUser()); // Dispatch logout action
-    navigate("/login"); // Redirect to login page after logout
+    dispatch(logoutUser());
+    navigate("/login");
   };
+
+  useEffect(() => {
+    // Simulating loading process
+    setLoading(false); // Remove this once you add real API data fetching
+    // Here you can use API call to fetch user-specific data if needed
+  }, []);
+
+  if (loading) {
+    return <div style={styles.loading}>Loading...</div>;
+  }
+
+  if (error) {
+    return <div style={styles.error}>{error}</div>;
+  }
 
   return (
     <div style={styles.dashboardContainer}>
       <Sidebar />
 
       <div style={styles.content}>
-  <h5>Welcome, {user?.name }</h5>
-  <p>Email: {user?.email }</p>
-  <p>Role: {user?.role }</p>
-
+        <h5>Welcome, {user?.name}</h5>
+        <p>Email: {user?.email}</p>
+        <p>Role: {user?.role}</p>
+        <NotificationSender
+        type="adminSignup" 
+        vendor={{ _id: "123", name: "New Vendor" }} 
+        />
 
         <div style={styles.dashboardLinks}>
           {user?.role === "vendor" && (
@@ -86,11 +115,11 @@ const Dashboard = () => {
           )}
           {user?.role === "admin" && (
             <>
-              <Link to="/approve-vendors" style={styles.dashboardButton}>
-                Approve Vendors
+              <Link to="/vendor-dashboard" style={styles.dashboardButton}>
+                Vendor Dashboard
               </Link>
-              <Link to="/manage-users" style={styles.dashboardButton}>
-                Manage Users
+              <Link to="/buyer-dashboard" style={styles.dashboardButton}>
+                Buyer Dashboard
               </Link>
             </>
           )}
@@ -98,7 +127,6 @@ const Dashboard = () => {
             View Order History
           </Link>
 
-          {/* Logout Button */}
           <button
             onClick={handleLogout}
             style={styles.logoutButton}
@@ -114,5 +142,6 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
 
 

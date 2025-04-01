@@ -72,7 +72,7 @@ const Footer = () => {
 
       {/* Footer Bottom */}
       <div style={styles.footerBottom}>
-        <p>&copy; {new Date().getFullYear()} Multi-Vendor Marketplace.</p>
+        <p>&copy; {new Date().getFullYear()}     Vendix-A Complete Shopping Platform !!  </p>
       </div>
     </footer>
   );

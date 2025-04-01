@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
 const User = require('../models/usermodel');
+const Order = require('../models/ordermodel');
 exports.register = async (req, res) => {
     try {
         console.log('Registration request body:', req.body);
@@ -56,9 +57,9 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
     try {
         console.log(req.body);
-        const { name, password } = req.body;
+        const { email, password } = req.body;
 
-        const user = await User.findOne({ name });
+        const user = await User.findOne({ email });
         if (!user) return res.status(404).json({ message: 'No user found' });
 
         const isMatch = await bcrypt.compare(password, user.password);
@@ -66,7 +67,7 @@ exports.login = async (req, res) => {
 
         // Generate JWT token with role included
         const token = jwt.sign(
-            { id: user._id, name, role: user.role },
+            { id: user._id, email, role: user.role },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
@@ -113,4 +114,143 @@ exports.approveVendor = async (req, res) => {
       return res.status(500).json({ message: 'Server error', error: error.message });
     }
   };
+ 
+ 
   
+  exports.getAdminStats = async (req, res) => {
+    try {
+      // Get total orders
+      const totalOrders = await Order.countDocuments();
+  
+      // Get total revenue (Sum of totalAmount from all completed orders)
+      const totalRevenue = await Order.aggregate([
+        { $match: { paymentStatus: 'Completed' } },  // Match only completed orders
+        { $group: { _id: null, total: { $sum: '$totalAmount' } } }  // Sum the totalAmount
+      ]);
+  
+      // Get total products (Assuming you want the total products in all orders)
+      const totalProducts = await Order.aggregate([
+        { $unwind: '$products' },  // Unwind the products array
+        { $group: { _id: null, total: { $sum: '$products.quantity' } } }  // Sum the quantities of all products
+      ]);
+  
+      // Get total vendors (users with role 'vendor')
+      const totalVendors = await User.countDocuments({ role: 'vendor' });
+  
+      // Get total customers (users with role 'buyer')
+      const totalCustomers = await User.countDocuments({ role: 'buyer' });
+  
+      return res.status(200).json({
+        totalOrders,
+        totalRevenue: totalRevenue[0]?.total || 0,  // If no revenue data, fallback to 0
+        totalProducts: totalProducts[0]?.total || 0,  // If no product data, fallback to 0
+        totalVendors,
+        totalCustomers
+      });
+    } catch (error) {
+      console.error('Error in stats:', error);
+      return res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  };
+  // Add this to your admin controller (after the existing methods)
+  exports.getMyProfile = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        
+        // More comprehensive query with population if needed
+        const user = await User.findById(userId)
+            .select('-password -resetPasswordToken -resetPasswordExpire')
+            .populate({
+                path: 'store',
+                select: 'name verificationStatus description logo banner',
+                match: { isActive: true } // Only include active stores
+            });
+
+        if (!user) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'User not found' 
+            });
+        }
+
+        // Base profile data
+        const profileData = {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            avatar: user.avatar,
+            role: user.role,
+            isEmailVerified: user.isEmailVerified,
+            isPhoneVerified: user.isPhoneVerified,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt
+        };
+
+        // Vendor-specific data
+        if (user.role === 'vendor') {
+            profileData.store = {
+                id: user.store?._id,
+                name: user.store?.name || user.storeName,
+                slug: user.store?.slug,
+                description: user.store?.description,
+                logo: user.store?.logo,
+                banner: user.store?.banner,
+                verificationStatus: user.store?.verificationStatus || 
+                                      (user.isApproved ? 'verified' : 'pending'),
+                rating: user.store?.rating,
+                totalProducts: user.store?.totalProducts,
+                // Add any other store-related fields
+            };
+            
+            // Add business information if needed
+            profileData.businessInfo = {
+                taxId: user.taxId,
+                businessRegistration: user.businessRegistration,
+                // Other compliance fields
+            };
+        }
+
+        // Customer-specific data
+        if (user.role === 'customer') {
+            profileData.customerProfile = {
+                addresses: user.addresses,
+                wishlist: user.wishlist,
+                cart: user.cart,
+                // Other customer-specific fields
+            };
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: profileData
+        });
+
+    } catch (error) {
+        console.error('Error fetching profile:', error);
+        return res.status(500).json({ 
+            success: false,
+            message: 'Failed to fetch profile',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+};
+exports.getPendingVendors = async (req, res) => {
+    try {
+        const pendingVendors = await User.find({
+            role: 'vendor',
+            isApproved: false
+        }).select('-password');
+
+        return res.status(200).json({
+            count: pendingVendors.length,
+            vendors: pendingVendors
+        });
+    } catch (error) {
+        console.error('Error fetching pending vendors:', error);
+        return res.status(500).json({
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};

@@ -1,17 +1,16 @@
 const express = require('express');
 const { auth, adminOnly, vendorOnly, buyerOnly } = require('../middlewares/auth');
-const User = require('../models/usermodel')
-const Order = require('../models/ordermodel')
-const Product = require('../models/productmodel')
-const Withdrawal=require('../models/withdrawalmodel')
+const User = require('../models/usermodel');
+const Order = require('../models/ordermodel');
+const Product = require('../models/productmodel');
+const Withdrawal = require('../models/withdrawalmodel');
 
 const router = express.Router();
 
 router.get('/admin-dashboard', auth, adminOnly, async (req, res) => {
     try {
-        // Fetch data relevant to Admin (e.g., all users, all orders)
-        const users = await User.find();  // List all users
-        const orders = await Order.find();  // List all orders
+        const users = await User.find();
+        const orders = await Order.find();
 
         res.json({
             message: "Welcome to the Admin Dashboard",
@@ -28,16 +27,20 @@ router.get('/admin-dashboard', auth, adminOnly, async (req, res) => {
 // Vendor Dashboard Route (Vendor only)
 router.get('/vendor-dashboard', auth, vendorOnly, async (req, res) => {
     try {
-        const vendorId = req.user._id;  // Get vendor ID from authenticated user
+        const vendorId = req.user._id;
 
-        // Fetch products, orders related to this vendor
+        // Fetch products and orders related to this vendor
         const products = await Product.find({ vendor: vendorId });
         const orders = await Order.find({ vendor: vendorId });
+
+        if (products.length === 0 || orders.length === 0) {
+            return res.status(404).json({ message: "No products or orders found for this vendor" });
+        }
 
         // Calculate total revenue from orders
         let totalRevenue = 0;
         orders.forEach(order => {
-            totalRevenue += order.totalAmount;  // Assuming each order has a `totalAmount` field
+            totalRevenue += order.totalAmount;
         });
 
         // Calculate stock updates (total products sold)
@@ -62,7 +65,8 @@ router.get('/vendor-dashboard', auth, vendorOnly, async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
-router.get("/analytics", auth,vendorOnly,async (req,res)=> {
+
+router.get("/analytics", auth, vendorOnly, async (req, res) => {
     try {
         const vendorId = req.user.id;
 
@@ -86,7 +90,7 @@ router.get("/analytics", auth,vendorOnly,async (req,res)=> {
 });
 
 // Request withdrawal
-router.post("/withdraw", auth,vendorOnly,async(req,res)=>{
+router.post("/withdraw", auth, vendorOnly, async (req, res) => {
     try {
         const vendorId = req.user.id;
         const { amount, paymentMethod } = req.body;
@@ -110,10 +114,14 @@ router.post("/withdraw", auth,vendorOnly,async(req,res)=>{
 });
 
 // Get vendor's withdrawal requests
-router.get("/withdrawals",auth,vendorOnly,async(req, res) => {
+router.get("/withdrawals", auth, vendorOnly, async (req, res) => {
     try {
         const vendorId = req.user.id;
-        const withdrawals = await withdrawals.find({vendor:vendorId})
+        const withdrawals = await Withdrawal.find({ vendor: vendorId });
+
+        if (!withdrawals || withdrawals.length === 0) {
+            return res.status(404).json({ message: "No withdrawal requests found" });
+        }
 
         res.json({ withdrawals });
     } catch (error) {
@@ -121,25 +129,82 @@ router.get("/withdrawals",auth,vendorOnly,async(req, res) => {
     }
 });
 
-// Buyer Dashboard Route (Buyer only)
+
 router.get('/buyer-dashboard', auth, buyerOnly, async (req, res) => {
     try {
-        // Fetch data relevant to Buyer (e.g., orders, wishlist)
-        const buyerId = req.user._id;  // Get buyer ID from authenticated user
+        const buyerId = req.user._id;
 
-        const orders = await Order.find({ buyer: buyerId });  // List orders related to this buyer
-        const wishlist = await Wishlist.find({ buyer: buyerId });  // List wishlist items related to this buyer (assuming you have a Wishlist model)
+        // Validate buyer ID
+        if (!buyerId) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid user identification"
+            });
+        }
+
+        // Fetch orders with pagination
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        const orders = await Order.find({ buyer: buyerId })
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .populate({
+                path: 'items.product',
+                select: 'name price images',
+                model: 'Product'
+            })
+            .populate({
+                path: 'seller',
+                select: 'businessName',
+                model: 'User'
+            });
+
+        // Format response
+        const formattedOrders = orders.map(order => ({
+            _id: order._id,
+            orderNumber: order.orderNumber,
+            totalAmount: order.totalAmount,
+            status: order.status,
+            createdAt: order.createdAt,
+            seller: order.seller?.businessName || 'Unknown Seller',
+            items: order.items.map(item => ({
+                productId: item.product?._id,
+                productName: item.product?.name || 'Deleted Product',
+                price: item.price,
+                quantity: item.quantity,
+                image: item.product?.images?.[0] || null
+            }))
+        }));
+
+        // Get total count for pagination
+        const totalOrders = await Order.countDocuments({ buyer: buyerId });
 
         res.json({
-            message: "Welcome to the Buyer Dashboard",
+            success: true,
+            message: "Buyer dashboard data retrieved successfully",
             data: {
-                orders,
-                wishlist,
+                orders: formattedOrders,
+                pagination: {
+                    currentPage: page,
+                    totalPages: Math.ceil(totalOrders / limit),
+                    totalOrders
+                }
             }
         });
+
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        console.error('Buyer dashboard error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to load dashboard data',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Server error'
+        });
     }
 });
+
+module.exports = router;
 
 module.exports = router;

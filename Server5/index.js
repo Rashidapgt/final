@@ -12,12 +12,14 @@ const cartRoute = require('./src/routes/cartroute');
 const categoryRoute = require('./src/routes/categoryroute');
 const paymentRoute = require('./src/routes/paymentroute');
 const reviewRoute=require('./src/routes/reviewroute')
+const profileRoute=require('./src/routes/profileroute')
 const adminRoute=require('./src/routes/adminroute')
 const dashboardRoute=require('./src/routes/dashboardroute')
 const couponRoute=require('./src/routes/couponroute')
 const notificationRoute=require('./src/routes/notificationroute')
 const { auth } = require('./src/middlewares/auth');
 const {cloudinary}=require('./src/config/cloudinary')
+
 
 app.use(express.json())
 app.use(cookieParser());
@@ -45,6 +47,7 @@ app.use(cors({
 
 
 app.use('/api/users',  userRoute);
+app.use('/api/profile',profileRoute)
 app.use('/api/products',  productRoute);
 app.use('/api/orders',  orderRoute);
 app.use('/api/cart', cartRoute);
@@ -56,6 +59,8 @@ app.use('/api',dashboardRoute)
 app.use('/api/dashboard', auth, dashboardRoute);
 app.use('/api/coupons', couponRoute);
 app.use("/api/notifications", notificationRoute);
+
+
 
 app.get('/',(req,res)=>{
     res.send("My Project")

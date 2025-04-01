@@ -1,15 +1,19 @@
 const express = require("express");
 const router = express.Router();
-const { notifyVendorOrder, notifyCustomerOrderStatus, notifyAdminVendorSignup } = require("../controllers/notificationcontroller");
-const { auth, adminOnly } = require("../middlewares/auth");
+const {
+    notifyVendorOrder,
+    notifyCustomerOrderStatus,
+    notifyAdminVendorSignup
+} = require("../controllers/notificationcontroller");
 
-// Route: Notify Vendor About a New Order
-router.post("/vendor/order", auth, notifyVendorOrder);
+// Route to notify vendor about a new order
+router.post("/vendor/order", notifyVendorOrder);
 
-// Route: Notify Customer About Order Status Change
-router.post("/customer/order-status", auth, notifyCustomerOrderStatus);
+// Route to notify customer about order status change
+router.post("/customer/order-status", notifyCustomerOrderStatus);
 
-// Route: Notify Admin About a New Vendor Signup
-router.post("/admin/vendor-signup", adminOnly, notifyAdminVendorSignup);
+// Route to notify admin about a new vendor signup
+router.post("/admin/vendor-signup", notifyAdminVendorSignup);
 
 module.exports = router;
+
