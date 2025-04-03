@@ -106,7 +106,8 @@ const ProductDetails = () => {
       </div>
       <Link to="/productlist">Continue Shopping</Link>
       {/* Pass correct product ID */}
-      <ReviewList productId={id} />
+      
+      <ReviewForm productId={id}/>
      
     </div>
   );

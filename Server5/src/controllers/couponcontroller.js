@@ -1,6 +1,7 @@
 
 const Cart = require('../models/cartmodel');
 const Coupon = require('../models/couponmodel');
+const User=require('../models/usermodel')
 
 // Calculate Shipping Fee
 const calculateShippingFee = (cart, userLocation) => {
@@ -24,24 +25,31 @@ const calculateTax = (cart, userLocation) => {
 const calculateEstimatedDeliveryTime = (userLocation) => {
   return userLocation.country === 'US' ? '3-5 business days' : '7-14 business days';
 };
-
-// Apply Coupon
 exports.applyCoupon = async (req, res) => {
-  const { code, userLocation } = req.body;
-  const userId = req.user._id;
-  const user = await User.findById(userId);  // Assuming you have a User model
-  if (!user || user.role !== 'buyer') {
-    return res.status(403).json({ message: 'Only buyers can apply coupons' });
-  }
-
-  if (!userLocation || !userLocation.country) {
-    return res.status(400).json({ message: 'User location is required' });
-  }
-
   try {
-    const cart = await Cart.findOne({ userId }).populate('items.productId');
+    const { code, userLocation, cartItems } = req.body;
+    const userId = req.user._id;
+
+    console.log("🔹 User ID:", userId);
+
+    const user = await User.findById(userId);
+    if (!user || user.role !== 'buyer') {
+      return res.status(403).json({ message: "Only buyers can apply coupons" });
+    }
+
+    if (!userLocation || !userLocation.country) {
+      return res.status(400).json({ message: "User location is required" });
+    }
+
+    let cart = await Cart.findOne({ userId }).populate('items.productId');
+    console.log("🔹 Cart Found:", cart ? "Yes" : "No");
+
     if (!cart) {
-      return res.status(404).json({ message: `Cart not found for user ${userId}` });
+      return res.status(404).json({ message: "Cart not found for this user" });
+    }
+
+    if (!cartItems || cartItems.length === 0) {
+      return res.status(400).json({ message: "Cart is empty. Add items before applying a coupon." });
     }
 
     const coupon = await Coupon.findOne({ code: code.toUpperCase() });
@@ -50,16 +58,35 @@ exports.applyCoupon = async (req, res) => {
     }
 
     if (coupon.validUntil && new Date() > coupon.validUntil) {
-      return res.status(400).json({ message: 'Coupon expired' });
+      return res.status(400).json({ message: "Coupon expired" });
     }
 
-    const totalAmount = cart.items.reduce((total, item) => {
-      const productPrice = item.productId.price;
-      return total + productPrice * item.quantity;
-    }, 0);
+    console.log("🔹 Cart Items from DB:", JSON.stringify(cart.items, null, 2));
+    console.log("🔹 Cart Items from Frontend:", JSON.stringify(cartItems, null, 2));
 
-    if (totalAmount < coupon.minOrderAmount) {
-      return res.status(400).json({ message: 'Order amount too low for this coupon' });
+    // **Fixing Order Amount Calculation**
+    let totalAmount = 0;
+    cartItems.forEach(item => {
+      const cartItem = cart.items.find(cartItem =>
+        cartItem.productId._id.toString() === item.productId.toString()
+      );
+
+      if (!cartItem) {
+        console.log(`❌ Item not found in cart:`, item);
+        return;
+      }
+
+      console.log(`✅ Calculating: ${cartItem.productId.name} | Price: ${cartItem.productId.price} | Quantity: ${item.quantity}`);
+
+      totalAmount += parseFloat(cartItem.productId.price) * parseInt(item.quantity);
+    });
+
+    console.log("🔹 Final Calculated Total Amount:", totalAmount);
+    console.log("🔹 Coupon Minimum Order Amount:", coupon.minOrderAmount);
+
+    const minOrderAmount = Number(coupon.minOrderAmount);
+    if (totalAmount < minOrderAmount) {
+      return res.status(400).json({ message: `Order amount too low. Minimum required: ${minOrderAmount}` });
     }
 
     const discount = (totalAmount * coupon.discountPercentage) / 100;
@@ -80,39 +107,18 @@ exports.applyCoupon = async (req, res) => {
     await cart.save();
 
     res.status(200).json({
-      message: 'Coupon applied successfully',
+      message: "Coupon applied successfully",
       discountedAmount,
       shippingFee,
       tax,
       estimatedDeliveryTime,
       finalPrice,
+      cartItems: cart.items, // Returning updated cart items
     });
+
   } catch (err) {
-    console.error('Error applying coupon:', err);
-    res.status(500).json({ error: 'Server error', details: err.message });
-  }
-};
-
-// Get Available Coupons
-exports.getAvailableCoupons = async (req, res) => {
-  try {
-    const currentDate = new Date();
-    console.log('Current Date:', currentDate);
-
-    const coupons = await Coupon.find({
-      isActive: true, // Only fetch active coupons
-      validUntil: { $gte: currentDate }, // Only fetch non-expired coupons
-    });
-    console.log('Fetched Coupons:', coupons);
-
-    if (!coupons || coupons.length === 0) {
-      return res.status(200).json({ message: "No available coupons", coupons: [] });
-    }
-
-    res.status(200).json({ coupons });
-  } catch (err) {
-    console.error("Error fetching coupons:", err);
-    res.status(500).json({ error: "Failed to fetch coupons", details: err.message });
+    console.error("❌ Error applying coupon:", err);
+    res.status(500).json({ error: "Server error", details: err.message });
   }
 };
 
@@ -145,6 +151,28 @@ exports.createCoupon = async (req, res) => {
     res.status(201).json({ message: 'Coupon created successfully', coupon: newCoupon });
   } catch (err) {
     console.error('Error creating coupon:', err);
+    res.status(500).json({ error: 'Server error', details: err.message });
+  }
+};
+
+exports.getAvailableCoupons = async (req, res) => {
+  try {
+    // Fetch all active coupons (you can adjust conditions based on your needs)
+    const availableCoupons = await Coupon.find({
+      validUntil: { $gte: new Date() }, // Ensure the coupon is not expired
+      isActive: true, // Only active coupons
+    });
+
+    if (availableCoupons.length === 0) {
+      return res.status(404).json({ message: 'No available coupons found' });
+    }
+
+    res.status(200).json({
+      message: 'Available coupons fetched successfully',
+      coupons: availableCoupons,
+    });
+  } catch (err) {
+    console.error('Error fetching available coupons:', err);
     res.status(500).json({ error: 'Server error', details: err.message });
   }
 };

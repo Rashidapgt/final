@@ -3,7 +3,8 @@ const router = express.Router();
 const {
     notifyVendorOrder,
     notifyCustomerOrderStatus,
-    notifyAdminVendorSignup
+    notifyAdminVendorSignup,
+    getNotificationsForUser
 } = require("../controllers/notificationcontroller");
 
 // Route to notify vendor about a new order
@@ -14,6 +15,10 @@ router.post("/customer/order-status", notifyCustomerOrderStatus);
 
 // Route to notify admin about a new vendor signup
 router.post("/admin/vendor-signup", notifyAdminVendorSignup);
+
+// GET route to fetch notifications for a specific user (admin, vendor, or buyer)
+router.get("/notifications/:role/:userId", getNotificationsForUser);
+
 
 module.exports = router;
 

@@ -25,7 +25,7 @@ const ReviewForm = ({ productId }) => {
       }
   
       const reviewData = {
-        product: productId,  // Changed from productId to product
+        product: productId,  // productId from the props
         rating,
         comment,
       };
@@ -39,7 +39,7 @@ const ReviewForm = ({ productId }) => {
   
       setError('Review submitted successfully! Redirecting...');
       setTimeout(() => {
-        navigate(`/products/${productId}`);
+        navigate(`/products/${productId}`); // Redirect to product page
       }, 1500);
     } catch (error) {
       console.error('Review submission error:', error);
@@ -120,13 +120,6 @@ const ReviewForm = ({ productId }) => {
       fontSize: '16px',
       fontWeight: 'bold',
       transition: 'background-color 0.2s',
-      ':hover': {
-        backgroundColor: '#0056b3',
-      },
-      ':disabled': {
-        backgroundColor: '#cccccc',
-        cursor: 'not-allowed',
-      },
     },
     error: {
       color: '#d32f2f',
@@ -146,18 +139,6 @@ const ReviewForm = ({ productId }) => {
       borderRadius: '4px',
       margin: '10px 0',
     },
-    loginPrompt: {
-      textAlign: 'center',
-      marginTop: '15px',
-    },
-    loginLink: {
-      color: '#007bff',
-      textDecoration: 'none',
-      fontWeight: 'bold',
-      ':hover': {
-        textDecoration: 'underline',
-      },
-    },
   };
 
   return (
@@ -168,11 +149,6 @@ const ReviewForm = ({ productId }) => {
       {error && (
         <div style={error.startsWith('Review submitted') ? styles.success : styles.error}>
           {error}
-          {error === 'You need to login to submit a review' && (
-            <div style={styles.loginPrompt}>
-              <a href="/login" style={styles.loginLink}>Click here to login</a>
-            </div>
-          )}
         </div>
       )}
 
@@ -186,11 +162,11 @@ const ReviewForm = ({ productId }) => {
             style={styles.select}
             required
           >
-            <option value={1}>1 - Poor</option>
-            <option value={2}>2 - Fair</option>
-            <option value={3}>3 - Good</option>
-            <option value={4}>4 - Very Good</option>
-            <option value={5}>5 - Excellent</option>
+           <option value={1}>⭐ 1 - Poor</option>
+    <option value={2}>⭐⭐ 2 - Fair</option>
+    <option value={3}>⭐⭐⭐ 3 - Good</option>
+    <option value={4}>⭐⭐⭐⭐ 4 - Very Good</option>
+    <option value={5}>⭐⭐⭐⭐⭐ 5 - Excellent</option>
           </select>
         </div>
         
@@ -219,4 +195,5 @@ const ReviewForm = ({ productId }) => {
 };
 
 export default ReviewForm;
+
 

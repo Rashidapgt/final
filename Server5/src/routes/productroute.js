@@ -13,7 +13,8 @@ const {
 router.post("/", auth, vendorOnly, createProduct); // Vendor can create product
 router.get("/", getAllProducts); // Public: Get all products
 router.get("/:id", getProductById); // Public: Get product by ID
-router.put("/:id", auth, vendorOnly, updateProduct); // Vendor/Admin can update
+router.put("/:id", auth, vendorOnly, updateProduct);
+router.put("/:id", auth, adminOnly, updateProduct); // Admin can update any product 
 router.delete("/:id", auth, adminOnly, deleteProduct); // Admin can delete
 
 module.exports = router;

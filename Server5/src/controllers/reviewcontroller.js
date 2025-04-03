@@ -1,23 +1,37 @@
 const jwt = require('jsonwebtoken');
 const Review = require('../models/reviewmodel');
 const { auth } = require('../middlewares/auth'); // Import auth middleware
+const Product=require("../models/productmodel")
 
-// Create a new review (only authenticated buyers can create a review)
+
+
+
 exports.createReview = async (req, res) => {
     try {
         const { product, rating, comment } = req.body;
         const buyer = req.user._id; // The buyer is the authenticated user
 
+        console.log('Received review data:', { product, rating, comment });
+
+        // Check if the product exists in the database
+        const foundProduct = await Product.findById(product);
+        if (!foundProduct) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        // Create a new review
         const newReview = new Review({
             buyer,
             product,
             rating,
-            comment
+            comment,
         });
 
+        // Save the review to the database
         await newReview.save();
         res.status(201).json({ message: 'Review added successfully', review: newReview });
     } catch (error) {
+        console.error('Error in creating review:', error);
         res.status(500).json({ error: error.message });
     }
 };

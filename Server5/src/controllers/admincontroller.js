@@ -56,27 +56,59 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
     try {
-        console.log(req.body);
         const { email, password } = req.body;
 
+        // Validate input
+        if (!email || !password) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Email and password are required' 
+            });
+        }
+
         const user = await User.findOne({ email });
-        if (!user) return res.status(404).json({ message: 'No user found' });
+        if (!user) {
+            return res.status(401).json({ 
+                success: false,
+                message: 'Invalid credentials' 
+            });
+        }
 
         const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).json({ message: 'Incorrect password' });
+        if (!isMatch) {
+            return res.status(401).json({ 
+                success: false,
+                message: 'Invalid credentials' 
+            });
+        }
 
-        // Generate JWT token with role included
+        // Generate JWT token
         const token = jwt.sign(
             { id: user._id, email, role: user.role },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
 
-        // Set token as HttpOnly cookie
-        res.cookie('token', token, { httpOnly: true });
-        return res.status(200).json({ message: 'Logged in successfully', token });
+        // Return both token and user details
+        return res.status(200).json({ 
+            success: true,
+            message: 'Logged in successfully',
+            token,
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role
+            }
+        });
+        
     } catch (error) {
-        return res.status(500).json({ message: 'Server error', error: error.message });
+        console.error('Login error:', error);
+        return res.status(500).json({ 
+            success: false,
+            message: 'Server error during login',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 };
 exports.logout = async (req, res) => {

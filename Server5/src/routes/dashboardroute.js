@@ -9,20 +9,30 @@ const router = express.Router();
 
 router.get('/admin-dashboard', auth, adminOnly, async (req, res) => {
     try {
-        const users = await User.find();
-        const orders = await Order.find();
+        const totalUsers = await User.countDocuments();
+        const totalVendors = await User.countDocuments({ role: 'vendor' });
+        const totalProducts = await Product.countDocuments();
+        const totalOrders = await Order.countDocuments();
+
+        const recentOrders = await Order.find().sort({ createdAt: -1 }).limit(5);
+        const recentVendors = await User.find({ role: 'vendor' }).sort({ createdAt: -1 }).limit(5);
 
         res.json({
-            message: "Welcome to the Admin Dashboard",
+            message: "Admin Dashboard Data",
             data: {
-                users,
-                orders,
+                totalUsers,
+                totalVendors,
+                totalProducts,
+                totalOrders,
+                recentOrders,
+                recentVendors,
             }
         });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
+
 
 // Vendor Dashboard Route (Vendor only)
 router.get('/vendor-dashboard', auth, vendorOnly, async (req, res) => {
@@ -147,6 +157,7 @@ router.get('/buyer-dashboard', auth, buyerOnly, async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
+        // Fetch orders for the buyer
         const orders = await Order.find({ buyer: buyerId })
             .sort({ createdAt: -1 })
             .skip(skip)
@@ -162,7 +173,7 @@ router.get('/buyer-dashboard', auth, buyerOnly, async (req, res) => {
                 model: 'User'
             });
 
-        // Format response
+        // Format orders response
         const formattedOrders = orders.map(order => ({
             _id: order._id,
             orderNumber: order.orderNumber,
@@ -182,11 +193,28 @@ router.get('/buyer-dashboard', auth, buyerOnly, async (req, res) => {
         // Get total count for pagination
         const totalOrders = await Order.countDocuments({ buyer: buyerId });
 
+        // Fetch wishlist items for the buyer
+        const buyer = await User.findById(buyerId).populate({
+            path: 'wishlist',
+            select: 'name price images',
+            model: 'Product'
+        });
+
+        // Format wishlist response
+        const wishlist = buyer.wishlist.map(item => ({
+            productId: item._id,
+            productName: item.name,
+            price: item.price,
+            image: item.images?.[0] || null
+        }));
+
+        // Combine orders and wishlist into one response
         res.json({
             success: true,
             message: "Buyer dashboard data retrieved successfully",
             data: {
                 orders: formattedOrders,
+                wishlist: wishlist,
                 pagination: {
                     currentPage: page,
                     totalPages: Math.ceil(totalOrders / limit),
@@ -207,4 +235,5 @@ router.get('/buyer-dashboard', auth, buyerOnly, async (req, res) => {
 
 module.exports = router;
 
-module.exports = router;
+
+

@@ -112,7 +112,7 @@ const Sidebar = () => {
         </li>
         <li style={inStyle.listItem}>
           <NavLink
-            to="/dashboard/vendor-dashboard"
+            to="/vendor/dashboard"
             style={({ isActive }) => ({
               ...inStyle.link,
               ...(isActive ? inStyle.activeLink : {}),
@@ -123,7 +123,7 @@ const Sidebar = () => {
         </li>
         <li style={inStyle.listItem}>
           <NavLink
-            to="/dashboard/buyer-dashboard"
+            to="/buyer/dashboard"
             style={({ isActive }) => ({
               ...inStyle.link,
               ...(isActive ? inStyle.activeLink : {}),

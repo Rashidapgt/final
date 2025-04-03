@@ -1,92 +1,100 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { Link } from "react-router-dom";
 
 const VendorDashboard = () => {
-  const navigate = useNavigate();
-  const [vendorData, setVendorData] = useState(null);
-
-  const dashboardContainerStyle = {
-    padding: "20px",
-    backgroundColor: "#f8f8f8",
-    borderRadius: "8px",
-    boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
-    marginTop: "20px",
+  const styles = {
+    container: {
+      padding: "20px",
+      backgroundColor: "#f9f9f9",
+      borderRadius: "8px",
+    },
+    title: {
+      textAlign: "center",
+      marginBottom: "20px",
+      color: "#333",
+    },
+    nav: {
+      listStyleType: "none",
+      padding: "0",
+      textAlign: "center",
+    },
+    navItem: {
+      margin: "10px 0",
+    },
+    link: {
+      textDecoration: "none",
+      color: "#28a745",
+      fontSize: "18px",
+    },
+    analyticsContainer: {
+      backgroundColor: "#fff",
+      padding: "20px",
+      marginTop: "20px",
+      borderRadius: "8px",
+      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+    },
+    analyticsHeading: {
+      fontSize: "1.5rem",
+      fontWeight: "bold",
+      color: "#333",
+      marginBottom: "20px",
+    },
+    analyticsItem: {
+      fontSize: "1.2rem",
+      color: "#555",
+      marginBottom: "10px",
+    },
   };
 
-  const headerStyle = {
-    fontSize: "24px",
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: "20px",
-  };
-
-  const contentStyle = {
-    display: "flex",
-    flexDirection: "column",
-    gap: "15px",
-  };
-
-  const cardStyle = {
-    padding: "15px",
-    backgroundColor: "#fff",
-    borderRadius: "8px",
-    boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
-    textAlign: "center",
-    minWidth: "250px",
-  };
+  const [analytics, setAnalytics] = useState(null);
+  const token = localStorage.getItem("token");
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-
-    fetchVendorData(token);
-  }, [navigate]);
-
-  const fetchVendorData = async (token) => {
-    try {
-      const response = await fetch('http://localhost:2500/api/dashboard/vendor-dashboard', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.status === 401) {
-        localStorage.removeItem('token');
-        navigate('/login');
-        return;
+    const fetchAnalytics = async () => {
+      try {
+        const response = await axios.get("http://localhost:2500/api/dashboard/analytics", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setAnalytics(response.data);
+      } catch (error) {
+        console.error("Error fetching analytics:", error);
       }
+    };
 
-      const data = await response.json();
-      setVendorData(data); // Store vendor data in state
-    } catch (error) {
-      console.log('Error fetching vendor data:', error);
-      navigate('/login');
-    }
-  };
+    fetchAnalytics();
+  }, [token]);
 
   return (
-    <div style={dashboardContainerStyle}>
-      <h1 style={headerStyle}>Vendor Dashboard</h1>
-      <div style={contentStyle}>
-        {vendorData ? (
-          <div style={cardStyle}>
-            <h6>Total Orders: {vendorData.orders}</h6>
-            <p>Revenue: ${vendorData.revenue}</p>
-            {/* Render other vendor dashboard data */}
-          </div>
-        ) : (
-          <p>Loading dashboard data...</p>
-        )}
-      </div>
-    </div>
+    <div style={styles.container}>
+      <h1 style={styles.title}>Vendor Dashboard</h1>
+
+      <nav>
+        <ul style={styles.nav}>
+          <li style={styles.navItem}>
+            <Link to="/manageproducts" style={styles.link}>Manage Products</Link>
+          </li>
+          <li style={styles.navItem}>
+            <Link to="/vendor/orders" style={styles.link}>View Orders</Link>
+          </li>
+          <li style={styles.navItem}>
+            <Link to="/analytics" style={styles.link}>Analytics</Link>
+          </li>
+          <li style={styles.navItem}>
+            <Link to="/withdrawals" style={styles.link}>Withdraw Earnings</Link>
+          </li>
+        </ul>
+      </nav>
+</div>
   );
 };
 
 export default VendorDashboard;
+
+
+
+
+
 
 
 

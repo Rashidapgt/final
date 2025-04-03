@@ -19,6 +19,7 @@ const initialState = {
   user: user,
   isLoading: false,
   error: null,
+  token: null,
 };
 
 // Register User
@@ -26,20 +27,15 @@ export const registerUser = createAsyncThunk(
   "admin/register",
   async ({ name, email, password, role, storeName }, { rejectWithValue }) => {
     try {
-      console.log("Sending registration data:", { name, email, password, role, storeName });
-
       const response = await axios.post(
         "http://localhost:2500/api/admin/register",
         { name, email, password, role, storeName },
         { headers: { "Content-Type": "application/json" } }
       );
-
-      console.log("Registration successful:", response.data);
-
       localStorage.setItem("user", JSON.stringify(response.data));
+      localStorage.setItem("token", response.data.token);
       return response.data;
     } catch (error) {
-      // Catch user already exists error
       if (error.response && error.response.data.message === "User already exists") {
         return rejectWithValue("User already exists. Please try logging in.");
       }
@@ -48,26 +44,25 @@ export const registerUser = createAsyncThunk(
   }
 );
 
-/// Login User
+// Login User
 export const loginUser = createAsyncThunk(
-  "auth/login", // changed the action name to 'auth/login' for consistency
+  "auth/login",
   async ({ email, password }, { rejectWithValue }) => {
     try {
-      const { data } = await axios.post("http://localhost:2500/api/admin/login", { email, password }); // Ensure the correct endpoint
-
-      // Store both user and token in localStorage
+      const { data } = await axios.post("http://localhost:2500/api/admin/login", { email, password });
       localStorage.setItem("user", JSON.stringify(data.user));
       localStorage.setItem("token", data.token);
-
-      return data; // Return user and token to Redux store
+      if (user?.location) {
+        localStorage.setItem("userLocation", JSON.stringify(user.location));
+      } else {
+        localStorage.setItem("userLocation", JSON.stringify({ country: "USA", state: "New York" })); // Default
+      }
+      return data; 
     } catch (error) {
-      // Handle errors more gracefully and provide more informative feedback
-      const errorMessage = error.response?.data?.message || "Invalid email or password";
-      return rejectWithValue(errorMessage);
+      return rejectWithValue(error.response?.data?.message || "Invalid email or password");
     }
   }
 );
-
 
 // Logout User
 export const logoutUser = createAsyncThunk(
@@ -103,42 +98,6 @@ export const updateProfile = createAsyncThunk(
   }
 );
 
-// Get User Profile
-export const getVendorProfiles = createAsyncThunk(
-  "auth/getVendorProfiles",
-  async (_, { rejectWithValue }) => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        return rejectWithValue("No authentication token found");
-      }
-
-      const { data } = await axios.get(
-        "http://localhost:2500/api/profile/vendors",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      // Update localStorage with fresh user data
-      localStorage.setItem("user", JSON.stringify(data));
-      return data;
-    } catch (error) {
-      // Handle specific error cases
-      if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        return rejectWithValue("Session expired. Please login again.");
-      }
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch profile"
-      );
-    }
-  }
-);
-
 // Auth Slice
 const authSlice = createSlice({
   name: "auth",
@@ -152,7 +111,8 @@ const authSlice = createSlice({
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -164,7 +124,6 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload;
         state.user = action.payload.user;
         state.token = action.payload.token;
       })
@@ -174,33 +133,7 @@ const authSlice = createSlice({
       })
       .addCase(logoutUser.fulfilled, (state) => {
         state.user = null;
-      })
-      .addCase(updateProfile.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(updateProfile.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.user = action.payload;
-      })
-      .addCase(updateProfile.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload;
-      })
-      .addCase(getVendorProfiles.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(getVendorProfiles.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.user = action.payload;
-      })
-      .addCase(getVendorProfiles.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload;
-        if (action.payload === "Session expired. Please login again.") {
-          state.user = null;
-        }
+        state.token = null;
       });
   },
 });

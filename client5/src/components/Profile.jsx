@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { getVendorProfiles, updateProfile } from '../store/AuthSlice';
+import {  updateProfile } from '../store/AuthSlice';
 import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
@@ -162,21 +162,6 @@ const Profile = () => {
   };
 
 
-  // Fetch profile data
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        await dispatch(getVendorProfiles()).unwrap();
-      } catch (err) {
-        console.error('Failed to load profile:', err);
-        if (err?.response?.status === 401) {
-          navigate('/login');
-        }
-      }
-    };
-    
-    fetchProfile();
-  }, [dispatch, navigate]);
 
   // Update form data when user data loads
   useEffect(() => {

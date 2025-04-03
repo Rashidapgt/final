@@ -131,3 +131,41 @@ exports.notifyAdminVendorSignup = async (req, res) => {
         res.status(500).json({ message: "Internal server error", error: error.message });
     }
 };
+
+
+
+exports.getNotificationsForUser = async (req, res) => {
+    try {
+        const { role, userId } = req.params;
+
+        // Validate userId and role
+        if (!role || !userId) {
+            return res.status(400).json({ message: "Role and User ID are required" });
+        }
+
+        // Fetch notifications based on role and userId
+        const notifications = await Notification.find({ recipient: userId })
+            .sort({ createdAt: -1 }); // Sort by newest first
+
+        if (!notifications || notifications.length === 0) {
+            return res.status(404).json({ message: "No notifications found" });
+        }
+
+        // Optional: Filter based on role (if you want specific types of notifications)
+        // For example, admins might only care about certain types of notifications, 
+        // vendors might get order notifications, etc.
+        if (role === 'admin') {
+            // Admin-specific logic (e.g., show vendor signups, order issues)
+            // You can filter notifications based on type if needed
+        } else if (role === 'vendor') {
+            // Vendor-specific logic (e.g., show new orders)
+        } else if (role === 'customer') {
+            // Customer-specific logic (e.g., show order status updates)
+        }
+
+        res.json(notifications); // Send notifications to the frontend
+    } catch (error) {
+        console.error("Error fetching notifications:", error);
+        res.status(500).json({ message: "Error fetching notifications", error: error.message });
+    }
+};

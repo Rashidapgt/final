@@ -20,8 +20,14 @@ import ProfileForm from "./components/ProfileForm.jsx";
 import NotificationSender from "./components/NotificationSender.jsx";
 import VendorDashboard from "./components/VendorDashboard.jsx";
 import BuyerDashboard from "./components/BuyerDashboard.jsx";
-
-
+import ManageProducts from "./components/ManageProducts.jsx";
+import Analytics from "./components/Analytics.jsx";
+import Withdrawals from "./components/Withdrawals.jsx";
+import PendingVendorsList from "./components/PendingVendorList.jsx";
+import ManageProductsAdmin from "./components/ManageProductsAdmin.jsx";
+import AdminOrders from "./components/AdminOrders.jsx";
+import VendorOrders from "./components/VendorOrders.jsx";
+import BuyerOrders from "./components/BuyerOrders.jsx";
 
 const App = () => {
   return (
@@ -37,7 +43,7 @@ const App = () => {
           <Route path="/productlist" element={<ProductList />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/profileform" element={<ProfileForm />} />
-          <Route path="/dashboard" element={<Dashboard />}/>
+         
           <Route path="/order-history" element={<OrderHistory />} />
         <Route path="/orders/:orderId" element={<OrderDetails />} />
           <Route path="/checkout" element={<CheckoutPage />} />
@@ -47,8 +53,34 @@ const App = () => {
         <Route path="/dashboard/products" element={<ProductList />} />
           <Route path="/dashboard/orders" element={<OrderHistory />} />
           <Route path="/notificationsender" element={<NotificationSender />} />
-          <Route path="/dashboard/buyer-dashboard" element={<BuyerDashboard />} />
-          <Route path="/dashboard/vendor-dashboard" element={<VendorDashboard />} />
+          
+          
+         
+          <Route path="/manageproducts" element={<ManageProducts />}/>
+          <Route path="/analytics" element={<Analytics />}/>
+          <Route path="/withdrawals" element={<Withdrawals />}/>
+          <Route path="/admin/pending-vendors" element={<PendingVendorsList />}/>
+          <Route path="/admin/manageproducts" element={<ManageProductsAdmin />}/>
+          <Route path="/buyer/orders" element={<BuyerOrders />} />
+        <Route path="/vendor/orders" element={<VendorOrders />} />
+        <Route path="/admin/orders" element={<AdminOrders />} />
+        <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+          <Route path="/admin-dashboard" element={<Dashboard />} />
+          <Route path="/admin/*" element={<Dashboard />} />
+        </Route>
+        
+        <Route element={<ProtectedRoute allowedRoles={['vendor']} />}>
+          <Route path="/vendor-dashboard" element={<VendorDashboard />} />
+          <Route path="/vendor/*" element={<VendorDashboard />} />
+        </Route>
+        
+        <Route element={<ProtectedRoute allowedRoles={['buyer']} />}>
+          <Route path="/buyer-dashboard" element={<BuyerDashboard />} />
+          <Route path="/account/*" element={<BuyerDashboard />} />
+        </Route>
+
+          
+          
         </Routes>
       </div>
       <Footer /> 
