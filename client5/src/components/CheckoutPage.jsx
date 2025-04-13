@@ -88,7 +88,8 @@ const CheckoutPage = () => {
       const orderId = createdOrder._id;
 
       // Load Stripe and create checkout session
-      const stripe = await loadStripe(process.env.PUBLISHED_KEY_STRIPE);
+      const stripe = await loadStripe(import.meta.env.VITE_PUBLISHED_KEY_STRIPE);
+
       if (!stripe) {
         setError("Stripe failed to initialize. Please try again later.");
         setLoading(false);
