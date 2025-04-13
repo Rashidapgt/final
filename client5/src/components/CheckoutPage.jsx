@@ -88,7 +88,12 @@ const CheckoutPage = () => {
       const orderId = createdOrder._id;
 
       // Load Stripe and create checkout session
-      const stripe = await loadStripe("pk_test_51RCkOoQxo0zDJxAzYZ53XQO42wSTWBEz8sDIudoaSuvGHvYUCdOeygj4K1cnecpoodIjzEWWNePYKlADeGMiV5UF00CsTJhLAi");
+      const stripe = await loadStripe(process.env.PUBLISHED_KEY_STRIPE);
+      if (!stripe) {
+        setError("Stripe failed to initialize. Please try again later.");
+        setLoading(false);
+        return;
+      }
 
       const paymentRes = await axios.post(
         "http://localhost:2500/api/payments/create-checkout-session", 
