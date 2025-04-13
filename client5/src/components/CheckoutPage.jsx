@@ -50,16 +50,14 @@ const CheckoutPage = () => {
       setLoading(true);
       setError("");
 
-      // Check if all address fields are filled
-      if (
-        !shippingAddress.street ||
-        !shippingAddress.city ||
-        !shippingAddress.state ||
-        !shippingAddress.zipCode
-      ) {
-        setError("Please fill in all shipping address fields");
-        setLoading(false);
-        return;
+      // Validate address fields
+      const requiredFields = ["street", "city", "state", "zipCode"];
+      for (let field of requiredFields) {
+        if (!shippingAddress[field]) {
+          setError(`Please fill in your ${field}`);
+          setLoading(false);
+          return;
+        }
       }
 
       const orderData = {
@@ -69,13 +67,14 @@ const CheckoutPage = () => {
           quantity: item.quantity,
         })),
         totalAmount: total,
+        shippingAddress,
       };
 
       console.log("Sending order data:", orderData);
 
-      // Place order API request
+      // Place order
       const orderRes = await axios.post(
-        "http://localhost:2500/api/orders",
+        `${import.meta.env.VITE_API_URL}api/orders`,
         orderData,
         {
           headers: {
@@ -87,17 +86,17 @@ const CheckoutPage = () => {
       const createdOrder = orderRes.data.order;
       const orderId = createdOrder._id;
 
-      // Load Stripe and create checkout session
+      // Load Stripe
       const stripe = await loadStripe(import.meta.env.VITE_PUBLISHED_KEY_STRIPE);
-
       if (!stripe) {
-        setError("Stripe failed to initialize. Please try again later.");
+        setError("Failed to load Stripe. Please try again.");
         setLoading(false);
         return;
       }
 
+      // Create Stripe checkout session
       const paymentRes = await axios.post(
-        "http://localhost:2500/api/payments/create-checkout-session", 
+        `${import.meta.env.VITE_API_URL}api/payments/create-checkout-session`,
         { orderId },
         {
           headers: {
@@ -106,26 +105,32 @@ const CheckoutPage = () => {
         }
       );
 
-      const { sessionId } = paymentRes.data;
+      console.log("Stripe session response:", paymentRes.data);
 
-      // Redirect to Stripe Checkout
-      const result = await stripe.redirectToCheckout({
-        sessionId: sessionId,
-      });
-
-      if (result.error) {
-        setError(result.error.message);
-      } else {
-        // On success, redirect user
-        navigate("/order-success");
+      const sessionId = paymentRes?.data?.sessionId;
+      if (!sessionId) {
+        setError("Failed to create Stripe session. Please try again.");
+        setLoading(false);
+        return;
       }
 
-      // Clear the cart after successful order placement
-      dispatch(clearCart());
+      const result = await stripe.redirectToCheckout({ sessionId });
+
+      if (result.error) {
+        console.error("Stripe redirect error:", result.error);
+        setError(result.error.message);
+        setLoading(false);
+      } else {
+        dispatch(clearCart()); // Clear cart only after successful Stripe session
+      }
     } catch (err) {
-      console.error("Order/Payment error:", err.response?.data || err.message);
-      setError(err.response?.data?.message || "Something went wrong");
-    } finally {
+      console.error("Order/Payment error:", err);
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err.message ||
+        "An unexpected error occurred";
+      setError(msg);
       setLoading(false);
     }
   };
@@ -211,6 +216,7 @@ const CheckoutPage = () => {
     <div style={styles.container}>
       <h2 style={styles.heading}>Checkout</h2>
 
+      {/* SHIPPING ADDRESS */}
       <div style={styles.section}>
         <h3 style={{ fontSize: "18px", marginBottom: "20px", color: "#444" }}>Shipping Address</h3>
         {["street", "city", "state", "zipCode"].map((field) => (
@@ -243,6 +249,7 @@ const CheckoutPage = () => {
         </div>
       </div>
 
+      {/* ORDER SUMMARY */}
       <div style={styles.section}>
         <h3 style={{ fontSize: "18px", marginBottom: "20px", color: "#444" }}>Order Summary</h3>
 
@@ -293,6 +300,7 @@ const CheckoutPage = () => {
 };
 
 export default CheckoutPage;
+
 
 
 
