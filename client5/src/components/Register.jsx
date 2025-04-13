@@ -82,7 +82,8 @@ const Register = () => {
     };
     const result = await dispatch(registerUser(userData));
     if (result.meta.requestStatus === "fulfilled") {
-      navigate("/dashboard");
+      navigate("/");
+      alert("Registration successfully Completed!");
     }
   };
 
@@ -158,6 +159,7 @@ const Register = () => {
           >
             {isLoading ? "Registering..." : "Register"}
           </button>
+          
         </form>
         <p style={styles.authSwitch}>
           Already have an account? <Link to="/login">Login</Link>

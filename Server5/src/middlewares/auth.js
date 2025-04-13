@@ -7,20 +7,20 @@ exports.auth = async (req, res, next) => {
   try {
     let token = req.cookies?.token || req.headers.authorization?.split(" ")[1];
 
-    console.log("🔹 Received Token:", token); // Debugging
+    console.log(" Received Token:", token); 
 
     if (!token) {
       return res.status(401).json({ message: "Authentication error: Token missing" });
     }
 
-    // Verify JWT token
+    
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("🔹 Decoded Token:", decoded); // Debugging
+    console.log(" Decoded Token:", decoded); 
 
-    // Ensure `decoded` contains `userId` (change `id` to `userId` if necessary)
+    
     req.user = await User.findById(decoded.userId || decoded.id).select("-password");
 
-    console.log("🔹 User from DB:", req.user); // Debugging
+    console.log(" User from DB:", req.user); 
 
     if (!req.user) {
       return res.status(404).json({ message: "User not found" });

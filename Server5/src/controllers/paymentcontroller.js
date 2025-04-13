@@ -1,87 +1,42 @@
-const Payment = require('../models/paymentmodel');
-const Order = require('../models/ordermodel'); // Ensure you import the Order model
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const Order = require('../models/ordermodel');
 
-// Create a new payment
-exports.createPayment = async (req, res) => {
-    try {
-        const { order, paymentMethod, transactionId } = req.body;
+exports.createStripeCheckoutSession = async (req, res) => {
+  try {
+    const { orderId } = req.body;
 
-        // Check if the order exists
-        const existingOrder = await Order.findById(order);
-        if (!existingOrder) {
-            return res.status(404).json({ message: 'Order not found' });
-        }
+    const order = await Order.findById(orderId).populate('products.product');
+    if (!order) return res.status(404).json({ message: 'Order not found' });
 
-        // Create payment record
-        const newPayment = new Payment({
-            order,
-            paymentMethod,
-            transactionId,
-            paymentStatus: transactionId ? 'Completed' : 'Pending'
-        });
+    if (!order.totalAmount || order.totalAmount <= 0)
+      return res.status(400).json({ message: 'Invalid order total amount' });
 
-        await newPayment.save();
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: order.products.map((item) => ({
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: item.product.name,
+          },
+          unit_amount: Math.round(item.product.price * 100),
+        },
+        quantity: item.quantity,
+      })),
+      mode: 'payment',
+      success_url: `http://localhost:5173/order-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `http://localhost:5173/checkout`,
+      metadata: {
+        orderId: order._id.toString(),
+      },
+    });
 
-        // Update order status if payment is completed
-        if (transactionId) {
-            existingOrder.paymentStatus = 'Completed';
-            await existingOrder.save();
-        }
+    res.status(200).json({ sessionId: session.id });
 
-        res.status(201).json({ message: 'Payment recorded successfully', payment: newPayment });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+  } catch (error) {
+    console.error('Stripe Checkout session error:', error);
+    res.status(500).json({ error: 'Failed to create Stripe Checkout session', message: error.message });
+  }
 };
 
-// Get all payments with order details
-exports.getAllPayments = async (req, res) => {
-    try {
-        const payments = await Payment.find().populate({
-            path: 'order',
-            select: 'buyer products totalAmount orderStatus'
-        });
-        res.status(200).json(payments);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-};
 
-// Get payment by ID with order details
-exports.getPaymentById = async (req, res) => {
-    try {
-        const payment = await Payment.findById(req.params.id).populate({
-            path: 'order',
-            select: 'buyer products totalAmount orderStatus'
-        });
-        if (!payment) return res.status(404).json({ message: 'Payment not found' });
-
-        res.status(200).json(payment);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-};
-
-// Update payment status
-exports.updatePayment = async (req, res) => {
-    try {
-        const updatedPayment = await Payment.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!updatedPayment) return res.status(404).json({ message: 'Payment not found' });
-
-        res.status(200).json({ message: 'Payment updated successfully', payment: updatedPayment });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-};
-
-// Delete payment
-exports.deletePayment = async (req, res) => {
-    try {
-        const payment = await Payment.findByIdAndDelete(req.params.id);
-        if (!payment) return res.status(404).json({ message: 'Payment not found' });
-
-        res.status(200).json({ message: 'Payment deleted successfully' });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-};

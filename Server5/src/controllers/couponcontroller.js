@@ -67,9 +67,11 @@ exports.applyCoupon = async (req, res) => {
     // **Fixing Order Amount Calculation**
     let totalAmount = 0;
     cartItems.forEach(item => {
-      const cartItem = cart.items.find(cartItem =>
-        cartItem.productId._id.toString() === item.productId.toString()
-      );
+      const itemProductId = item.productId?._id || item.productId;
+const cartItem = cart.items.find(cartItem =>
+  cartItem.productId._id.toString() === itemProductId.toString()
+);
+
 
       if (!cartItem) {
         console.log(`❌ Item not found in cart:`, item);

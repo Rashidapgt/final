@@ -88,7 +88,7 @@ const Cart = () => {
             { 
                 code: coupon, 
                 cartItems,
-                userLocation  // ✅ Ensure userLocation is sent in the request
+                userLocation  // 
             },
             { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
         );
@@ -302,49 +302,7 @@ const Cart = () => {
             ))}
           </div>
 
-          {/* Coupon Section */}
-          <div style={styles.couponSection}>
-            <h4 style={styles.couponHeader}>Apply Coupon Code</h4>
-            {discount > 0 ? (
-              <div>
-                <p style={styles.successText}>
-                  Coupon "{appliedCoupon}" applied (-${discount.toFixed(2)})
-                </p>
-                <button 
-                  onClick={handleRemoveCoupon}
-                  style={styles.removeCouponButton}
-                >
-                  Remove Coupon
-                </button>
-              </div>
-            ) : (
-              <>
-                {/* Display Available Coupons Dropdown */}
-                <div style={styles.couponInputGroup}>
-                  <select
-                    onChange={(e) => setCoupon(e.target.value)}
-                    value={coupon}
-                    style={styles.couponInput}
-                  >
-                    <option value="">Select a coupon</option>
-                    {availableCoupons.map((couponItem) => (
-                      <option key={couponItem.code} value={couponItem.code}>
-                        {couponItem.code} 
-                      </option>
-                    ))}
-                  </select>
-                  <button 
-                    onClick={handleApplyCoupon} 
-                    style={styles.applyButton}
-                  >
-                    Apply
-                  </button>
-                </div>
-                
-                {error && <p style={styles.errorText}>{error}</p>}
-              </>
-            )}
-          </div>
+          
 
           {/* Order Summary */}
           <div style={styles.summarySection}>
