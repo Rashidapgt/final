@@ -50,14 +50,15 @@ const CheckoutPage = () => {
       setLoading(true);
       setError("");
 
-      // Validate address fields
-      const requiredFields = ["street", "city", "state", "zipCode"];
-      for (let field of requiredFields) {
-        if (!shippingAddress[field]) {
-          setError(`Please fill in your ${field}`);
-          setLoading(false);
-          return;
-        }
+      if (
+        !shippingAddress.street ||
+        !shippingAddress.city ||
+        !shippingAddress.state ||
+        !shippingAddress.zipCode
+      ) {
+        setError("Please fill in all shipping address fields");
+        setLoading(false);
+        return;
       }
 
       const orderData = {
@@ -67,14 +68,10 @@ const CheckoutPage = () => {
           quantity: item.quantity,
         })),
         totalAmount: total,
-        shippingAddress,
       };
 
-      console.log("Sending order data:", orderData);
-
-      // Place order
       const orderRes = await axios.post(
-        `${import.meta.env.VITE_API_URL}api/orders`,
+        "http://localhost:2500/api/orders",
         orderData,
         {
           headers: {
@@ -86,17 +83,15 @@ const CheckoutPage = () => {
       const createdOrder = orderRes.data.order;
       const orderId = createdOrder._id;
 
-      // Load Stripe
       const stripe = await loadStripe(import.meta.env.VITE_PUBLISHED_KEY_STRIPE);
       if (!stripe) {
-        setError("Failed to load Stripe. Please try again.");
+        setError("Stripe failed to initialize. Please try again later.");
         setLoading(false);
         return;
       }
 
-      // Create Stripe checkout session
       const paymentRes = await axios.post(
-        `${import.meta.env.VITE_API_URL}api/payments/create-checkout-session`,
+        "http://localhost:2500/api/payments/create-checkout-session",
         { orderId },
         {
           headers: {
@@ -105,32 +100,29 @@ const CheckoutPage = () => {
         }
       );
 
-      console.log("Stripe session response:", paymentRes.data);
-
-      const sessionId = paymentRes?.data?.sessionId;
-      if (!sessionId) {
-        setError("Failed to create Stripe session. Please try again.");
-        setLoading(false);
-        return;
-      }
+      const { sessionId } = paymentRes.data;
 
       const result = await stripe.redirectToCheckout({ sessionId });
 
       if (result.error) {
-        console.error("Stripe redirect error:", result.error);
         setError(result.error.message);
-        setLoading(false);
       } else {
-        dispatch(clearCart()); // Clear cart only after successful Stripe session
+        navigate("/order-success");
       }
+
+      dispatch(clearCart());
     } catch (err) {
-      console.error("Order/Payment error:", err);
       const msg =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        err.message ||
-        "An unexpected error occurred";
-      setError(msg);
+        err?.response?.data?.message || err?.message || "Something went wrong";
+
+      // Handle token expiration
+      if (msg.toLowerCase().includes("token expired")) {
+        localStorage.removeItem("token");
+        navigate("/login");
+      } else {
+        setError(msg);
+      }
+    } finally {
       setLoading(false);
     }
   };
@@ -216,7 +208,6 @@ const CheckoutPage = () => {
     <div style={styles.container}>
       <h2 style={styles.heading}>Checkout</h2>
 
-      {/* SHIPPING ADDRESS */}
       <div style={styles.section}>
         <h3 style={{ fontSize: "18px", marginBottom: "20px", color: "#444" }}>Shipping Address</h3>
         {["street", "city", "state", "zipCode"].map((field) => (
@@ -249,7 +240,6 @@ const CheckoutPage = () => {
         </div>
       </div>
 
-      {/* ORDER SUMMARY */}
       <div style={styles.section}>
         <h3 style={{ fontSize: "18px", marginBottom: "20px", color: "#444" }}>Order Summary</h3>
 
@@ -300,6 +290,7 @@ const CheckoutPage = () => {
 };
 
 export default CheckoutPage;
+
 
 
 
